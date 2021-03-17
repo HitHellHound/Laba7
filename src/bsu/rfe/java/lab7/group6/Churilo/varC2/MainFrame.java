@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 
 public class MainFrame extends JFrame {
     private static final String FRAME_TITLE = "Клиент мгновенных сообщений";
@@ -28,7 +29,8 @@ public class MainFrame extends JFrame {
     private static final int MEDIUM_GAP = 10;
     private static final int LARGE_GAP = 15;
 
-    private static final int SERVER_PORT = 4567;
+    private int SERVER_PORT;
+    private int FRIEND_PORT;
 
     private JTextField textFieldFrom;
     private JTextField textFieldTo;
@@ -118,6 +120,12 @@ public class MainFrame extends JFrame {
                         .addComponent(messagePanel)
                         .addContainerGap());
 
+        Scanner in = new Scanner(System.in);
+        System.out.println("Your port:");
+        SERVER_PORT = in.nextInt();
+        System.out.println("NOT your port:");
+        FRIEND_PORT = in.nextInt();
+
         new Thread(new Runnable() {
             public void run() {
                 try{
@@ -165,7 +173,7 @@ public class MainFrame extends JFrame {
                 return;
             }
 
-            Socket socket = new Socket(destinationAddress, SERVER_PORT);
+            Socket socket = new Socket(destinationAddress, FRIEND_PORT);
 
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             out.writeUTF(senderName);
