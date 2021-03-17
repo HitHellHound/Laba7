@@ -31,6 +31,8 @@ public class MainFrame extends JFrame {
 
     private int SERVER_PORT;
 
+    private InstantMessenger messenger;
+
     private JTextField textFieldFrom;
     private JTextField textFieldTo;
 
@@ -47,9 +49,16 @@ public class MainFrame extends JFrame {
         Scanner in = new Scanner(System.in);
         System.out.println("Your port:");
         SERVER_PORT = in.nextInt();
+        messenger = new InstantMessenger(SERVER_PORT);
 
         textAreaIncoming = new JTextArea(INCOMING_AREA_DEFAULT_ROWS,0);
         textAreaIncoming.setEditable(false);
+
+        messenger.addMessageListener(new MessageListener() {
+            public void messageReceived(String senderName, String message) {
+                textAreaIncoming.append(senderName + ": " + message + "\n");
+            }
+        });
 
         JScrollPane scrollPaneIncoming = new JScrollPane(textAreaIncoming);
 
@@ -69,7 +78,40 @@ public class MainFrame extends JFrame {
         JButton sendButton = new JButton("Отправить");
         sendButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                sendMessage();
+                try {
+                    String senderName = textFieldFrom.getText();
+                    String destinationAddress = textFieldTo.getText();
+                    String message = textAreaOutgoing.getText();
+
+                    if (senderName.isEmpty()){
+                        JOptionPane.showMessageDialog(MainFrame.this, "Введите имя отправителя", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    if (destinationAddress.isEmpty()) {
+                        JOptionPane.showMessageDialog(MainFrame.this, "Введите адрес узла-получателя", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    if (message.isEmpty()) {
+                        JOptionPane.showMessageDialog(MainFrame.this, "Введите текст сообщения", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    messenger.sendMessage(senderName, destinationAddress, message);
+
+                    textAreaIncoming.append("Me -> " + destinationAddress + ": " + message + "\n");
+
+                    textAreaOutgoing.setText("");
+                }
+                catch (UnknownHostException ex){
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение: узел-адресат не найден", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                }
+                catch (IOException ex){
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 
@@ -122,77 +164,6 @@ public class MainFrame extends JFrame {
                         .addGap(MEDIUM_GAP)
                         .addComponent(messagePanel)
                         .addContainerGap());
-
-
-        new Thread(new Runnable() {
-            public void run() {
-                try{
-                    ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-
-                    while (!Thread.interrupted()){
-                        Socket socket = serverSocket.accept();
-                        DataInputStream in = new DataInputStream(socket.getInputStream());
-
-                        String senderName = in.readUTF();
-                        String senderPort = in.readUTF();
-                        String message = in.readUTF();
-
-                        socket.close();
-
-                        String address = ((InetSocketAddress)socket.getRemoteSocketAddress()).getAddress().getHostAddress();
-                        textAreaIncoming.append(senderName + " (" + address + ":" + senderPort + "): " + message + "\n");
-                    }
-                }
-                catch (IOException e){
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(MainFrame.this,"Ошибка в работе сервера", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        }).start();
-    }
-
-    private void sendMessage(){
-        try {
-            String senderName = textFieldFrom.getText();
-            String destinationAddress = textFieldTo.getText();
-            String message = textAreaOutgoing.getText();
-
-            if (senderName.isEmpty()){
-                JOptionPane.showMessageDialog(this, "Введите имя отправителя", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (destinationAddress.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Введите адрес узла-получателя", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (message.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Введите текст сообщения", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            Socket socket = new Socket("127.0.0.1", Integer.parseInt(destinationAddress));
-
-            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            out.writeUTF(senderName);
-            out.writeUTF(String.valueOf(SERVER_PORT));
-            out.writeUTF(message);
-
-            socket.close();
-
-            textAreaIncoming.append("Я -> " + destinationAddress + ": " + message + "\n");
-
-            textAreaOutgoing.setText("");
-        }
-        catch (UnknownHostException e){
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение: узел-адресат не найден", "Ошибка", JOptionPane.ERROR_MESSAGE);
-        }
-        catch (IOException e){
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение", "Ошибка", JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     public static void main(String[] args){
