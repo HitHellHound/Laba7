@@ -30,7 +30,6 @@ public class MainFrame extends JFrame {
     private static final int LARGE_GAP = 15;
 
     private int SERVER_PORT;
-    private int FRIEND_PORT;
 
     private JTextField textFieldFrom;
     private JTextField textFieldTo;
@@ -44,6 +43,10 @@ public class MainFrame extends JFrame {
 
         Toolkit kit = Toolkit.getDefaultToolkit();
         setLocation((kit.getScreenSize().width - getWidth()) / 2,(kit.getScreenSize().height - getHeight()) / 2);
+
+        Scanner in = new Scanner(System.in);
+        System.out.println("Your port:");
+        SERVER_PORT = in.nextInt();
 
         textAreaIncoming = new JTextArea(INCOMING_AREA_DEFAULT_ROWS,0);
         textAreaIncoming.setEditable(false);
@@ -61,7 +64,7 @@ public class MainFrame extends JFrame {
         JScrollPane scrollPaneOutgoing = new JScrollPane(textAreaOutgoing);
 
         JPanel messagePanel = new JPanel();
-        messagePanel.setBorder(BorderFactory.createTitledBorder("Сообщение"));
+        messagePanel.setBorder(BorderFactory.createTitledBorder("Сообщение пользователя" + SERVER_PORT));
 
         JButton sendButton = new JButton("Отправить");
         sendButton.addActionListener(new ActionListener() {
@@ -120,11 +123,6 @@ public class MainFrame extends JFrame {
                         .addComponent(messagePanel)
                         .addContainerGap());
 
-        Scanner in = new Scanner(System.in);
-        System.out.println("Your port:");
-        SERVER_PORT = in.nextInt();
-        System.out.println("NOT your port:");
-        FRIEND_PORT = in.nextInt();
 
         new Thread(new Runnable() {
             public void run() {
@@ -136,12 +134,13 @@ public class MainFrame extends JFrame {
                         DataInputStream in = new DataInputStream(socket.getInputStream());
 
                         String senderName = in.readUTF();
+                        String senderPort = in.readUTF();
                         String message = in.readUTF();
 
                         socket.close();
 
                         String address = ((InetSocketAddress)socket.getRemoteSocketAddress()).getAddress().getHostAddress();
-                        textAreaIncoming.append(senderName + " (" + address + "): " + message + "\n");
+                        textAreaIncoming.append(senderName + " (" + address + ":" + senderPort + "): " + message + "\n");
                     }
                 }
                 catch (IOException e){
@@ -173,10 +172,11 @@ public class MainFrame extends JFrame {
                 return;
             }
 
-            Socket socket = new Socket(destinationAddress, FRIEND_PORT);
+            Socket socket = new Socket("127.0.0.1", Integer.parseInt(destinationAddress));
 
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             out.writeUTF(senderName);
+            out.writeUTF(String.valueOf(SERVER_PORT));
             out.writeUTF(message);
 
             socket.close();
