@@ -32,6 +32,7 @@ public class MainFrame extends JFrame {
     private int SERVER_PORT;
 
     private InstantMessenger messenger;
+    private User currentUser;
 
     private JTextField textFieldFrom;
     private JTextField textFieldTo;
@@ -47,9 +48,13 @@ public class MainFrame extends JFrame {
         setLocation((kit.getScreenSize().width - getWidth()) / 2,(kit.getScreenSize().height - getHeight()) / 2);
 
         Scanner in = new Scanner(System.in);
+        System.out.println("Your name:");
+        String name = in.nextLine();
         System.out.println("Your port:");
         SERVER_PORT = in.nextInt();
-        messenger = new InstantMessenger(SERVER_PORT);
+        InetSocketAddress myAddress = new InetSocketAddress("127.0.0.1",SERVER_PORT);
+        User me = new User(name, myAddress);
+        messenger = new InstantMessenger(me);
 
         textAreaIncoming = new JTextArea(INCOMING_AREA_DEFAULT_ROWS,0);
         textAreaIncoming.setEditable(false);

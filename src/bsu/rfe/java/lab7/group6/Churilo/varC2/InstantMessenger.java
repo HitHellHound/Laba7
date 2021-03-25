@@ -13,11 +13,14 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class InstantMessenger {
+    private User thisUser;
     private int serverPort;
     private LinkedList<MessageListener> listeners = new LinkedList<MessageListener>();
+    private LinkedList<User> users = new LinkedList<User>();
+    private LinkedList<UserListener> userListeners = new LinkedList<UserListener>();
 
-    public InstantMessenger(int port){
-        serverPort = port;
+    public InstantMessenger(User owner){
+        serverPort = owner.getAddress().getPort();
         startServer();
     }
 
