@@ -22,17 +22,6 @@ public class InstantMessenger {
         startServer();
     }
 
-    public void sendMessage(String senderName, String destinationAddress, String message) throws UnknownHostException, IOException {
-        Socket socket = new Socket("127.0.0.1", Integer.parseInt(destinationAddress));
-
-        DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-        out.writeUTF(senderName);
-        out.writeUTF("127.0.0.1" + String.valueOf(serverPort));
-        out.writeUTF(message);
-
-        socket.close();
-    }
-
     private void startServer(){
         new Thread(new Runnable() {
             public void run() {
@@ -53,7 +42,7 @@ public class InstantMessenger {
                             String port = in.readUTF();
                             String name = in.readUTF();
 
-                            User newUser = new User(name,new InetSocketAddress(IP, Integer.parseInt(port)));
+                            User newUser = new User(name, new InetSocketAddress(IP, Integer.parseInt(port)));
                             synchronized (users) {
                                 if(!isUserInList(newUser)) {
                                     users.add(newUser);
@@ -81,11 +70,14 @@ public class InstantMessenger {
     }
 
     public void sendFriendRequest(String port) throws UnknownHostException, IOException, NumberFormatException{
-        Socket socket = new Socket("127.0.0.1", Integer.parseInt(port));
+        int portInt = Integer.parseInt(port);
+        //if(portInt == serverPort) return;
+
+        Socket socket = new Socket("127.0.0.1", portInt);
 
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         out.writeUTF("0001");
-        out.writeUTF("127.0.0.1");
+        out.writeUTF(owner.getAddress().getAddress().getHostAddress());
         out.writeUTF(String.valueOf(serverPort));
         out.writeUTF(owner.getName());
 
@@ -97,17 +89,18 @@ public class InstantMessenger {
         String port = in.readUTF();
         String name = in.readUTF();
 
-        User newUser = new User(name,new InetSocketAddress(IP, Integer.parseInt(port)));
+        User newUser = new User(name, new InetSocketAddress(IP, Integer.parseInt(port)));
         try{
             Socket socket = new Socket(IP, Integer.parseInt(port));
 
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             out.writeUTF("0002");
-            out.writeUTF("127.0.0.1");
+            out.writeUTF(owner.getAddress().getAddress().getHostAddress());
             out.writeUTF(String.valueOf(serverPort));
             out.writeUTF(owner.getName());
 
             socket.close();
+
             synchronized (users) {
                 if(!isUserInList(newUser)) {
                     users.add(newUser);
@@ -121,6 +114,21 @@ public class InstantMessenger {
         catch (IOException ex){
             System.out.println("IOError");
         }
+    }
+
+    public synchronized void sendMessage(User recipient, String message) throws UnknownHostException, IOException {
+        Socket socket = new Socket(recipient.getAddress().getAddress().getHostAddress(),recipient.getAddress().getPort());
+
+        recipient.addMessageToHistory("Me -> " + recipient.getName() + ": " + message + "\n");
+        notifyMessageListeners(recipient, "Me -> " + recipient.getName() + ": " + message + "\n");
+
+        DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+        out.writeUTF("0042");
+        out.writeUTF(owner.getAddress().getAddress().getHostAddress());
+        out.writeUTF(String.valueOf(serverPort));
+        out.writeUTF(message);
+
+        socket.close();
     }
 
     private boolean isUserInList(User userC) {
@@ -144,7 +152,7 @@ public class InstantMessenger {
         }
     }
 
-    private void notifyMessageListeners(String sender, String message){
+    private void notifyMessageListeners(User sender, String message){
         synchronized (listeners){
             for (MessageListener listener : listeners)
                 listener.messageReceived(sender,message);

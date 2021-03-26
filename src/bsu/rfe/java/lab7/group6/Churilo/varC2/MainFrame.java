@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -61,8 +63,8 @@ public class MainFrame extends JFrame {
         textAreaIncoming.setEditable(false);
 
         messenger.addMessageListener(new MessageListener() {
-            public void messageReceived(String senderName, String message) {
-                textAreaIncoming.append(senderName + ": " + message + "\n");
+            public void messageReceived(User sender, String message) {
+                textAreaIncoming.append(sender.getName() + ": " + message + "\n");
             }
         });
 
@@ -106,8 +108,7 @@ public class MainFrame extends JFrame {
         });
         messenger.addUserListener(new UserListener() {
             public void addedNewUser(User newUser) {
-                System.out.println("Create Butt");
-                JButton button = new JButton(newUser.getName());
+                JButton button = createUserButton(newUser);
                 userListPanel.add(button);
                 MainFrame.this.revalidate();
             }
@@ -117,40 +118,40 @@ public class MainFrame extends JFrame {
         JButton sendButton = new JButton("Отправить");
         sendButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                try {
-                    String senderName = textFieldFrom.getText();
-                    String destinationAddress = textFieldTo.getText();
-                    String message = textAreaOutgoing.getText();
-
-                    if (senderName.isEmpty()){
-                        JOptionPane.showMessageDialog(MainFrame.this, "Введите имя отправителя", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    if (destinationAddress.isEmpty()) {
-                        JOptionPane.showMessageDialog(MainFrame.this, "Введите адрес узла-получателя", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    if (message.isEmpty()) {
-                        JOptionPane.showMessageDialog(MainFrame.this, "Введите текст сообщения", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    messenger.sendMessage(senderName, destinationAddress, message);
-
-                    textAreaIncoming.append("Me -> " + destinationAddress + ": " + message + "\n");
-
-                    textAreaOutgoing.setText("");
-                }
-                catch (UnknownHostException ex){
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение: узел-адресат не найден", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                }
-                catch (IOException ex){
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                }
+//                try {
+//                    String senderName = textFieldFrom.getText();
+//                    String destinationAddress = textFieldTo.getText();
+//                    String message = textAreaOutgoing.getText();
+//
+//                    if (senderName.isEmpty()){
+//                        JOptionPane.showMessageDialog(MainFrame.this, "Введите имя отправителя", "Ошибка", JOptionPane.ERROR_MESSAGE);
+//                        return;
+//                    }
+//
+//                    if (destinationAddress.isEmpty()) {
+//                        JOptionPane.showMessageDialog(MainFrame.this, "Введите адрес узла-получателя", "Ошибка", JOptionPane.ERROR_MESSAGE);
+//                        return;
+//                    }
+//
+//                    if (message.isEmpty()) {
+//                        JOptionPane.showMessageDialog(MainFrame.this, "Введите текст сообщения", "Ошибка", JOptionPane.ERROR_MESSAGE);
+//                        return;
+//                    }
+//
+//                    //messenger.sendMessage(senderName, destinationAddress, message);
+//
+//                    textAreaIncoming.append("Me -> " + destinationAddress + ": " + message + "\n");
+//
+//                    textAreaOutgoing.setText("");
+//                }
+//                catch (UnknownHostException ex){
+//                    ex.printStackTrace();
+//                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение: узел-адресат не найден", "Ошибка", JOptionPane.ERROR_MESSAGE);
+//                }
+//                catch (IOException ex){
+//                    ex.printStackTrace();
+//                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение", "Ошибка", JOptionPane.ERROR_MESSAGE);
+//                }
             }
         });
 
@@ -203,6 +204,25 @@ public class MainFrame extends JFrame {
                         .addGap(MEDIUM_GAP)
                         .addComponent(messagePanel)
                         .addContainerGap());
+    }
+
+    private JButton createUserButton(User user){
+        JButton button = new JButton(user.getName());
+        button.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                MessengerWindow window = new MessengerWindow(messenger, user);
+                window.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+                window.addWindowListener(new WindowAdapter() {
+                    public void windowClosing(WindowEvent e) {
+                        super.windowClosing(e);
+                        button.setEnabled(true);
+                    }
+                });
+                window.setVisible(true);
+                button.setEnabled(false);
+            }
+        });
+        return button;
     }
 
     public static void main(String[] args){
