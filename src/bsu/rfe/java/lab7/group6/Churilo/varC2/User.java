@@ -3,8 +3,9 @@ package bsu.rfe.java.lab7.group6.Churilo.varC2;
 import java.net.InetSocketAddress;
 
 public class User {
-    String name;
-    InetSocketAddress address;
+    private String name;
+    private InetSocketAddress address;
+    private StringBuffer messageHistory = new StringBuffer();
 
     public User(String name, InetSocketAddress address){
         this.name = name;
@@ -19,8 +20,16 @@ public class User {
         return address;
     }
 
-    public void setName(String name){
+    private void setNewName(String name){
         this.name = name;
+    }
+
+    public StringBuffer getMessageHistory(){
+        return messageHistory;
+    }
+
+    public void addMessageToHistory(String message){
+        messageHistory.append(message);
     }
 
     public boolean equals(User user){

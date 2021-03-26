@@ -32,10 +32,11 @@ public class MainFrame extends JFrame {
     private int SERVER_PORT;
 
     private InstantMessenger messenger;
-    private User currentUser;
 
     private JTextField textFieldFrom;
     private JTextField textFieldTo;
+
+    private JPanel userListPanel;
 
     private JTextArea textAreaIncoming;
     private JTextArea textAreaOutgoing;
@@ -65,7 +66,9 @@ public class MainFrame extends JFrame {
             }
         });
 
-        JScrollPane scrollPaneIncoming = new JScrollPane(textAreaIncoming);
+        userListPanel = new JPanel();
+        //JScrollPane scrollPaneIncoming = new JScrollPane(textAreaIncoming);
+        JScrollPane scrollPaneIncoming = new JScrollPane(userListPanel);
 
         final JLabel labelFrom = new JLabel("Подпись");
         final JLabel labelTo = new JLabel("Получатель");
@@ -79,6 +82,37 @@ public class MainFrame extends JFrame {
 
         JPanel messagePanel = new JPanel();
         messagePanel.setBorder(BorderFactory.createTitledBorder("Сообщение пользователя" + SERVER_PORT));
+
+        JButton addFriendButton = new JButton("Добавить собеседника");
+        addFriendButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String port = JOptionPane.showInputDialog(MainFrame.this, "Введите порт собеседника", "Добавление собеседника", JOptionPane.QUESTION_MESSAGE);
+                try{
+                    messenger.sendFriendRequest(port);
+                }
+                catch (UnknownHostException ex){
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось добавить собеседника: узел-адресат не найден", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                }
+                catch (IOException ex){
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось добавить собеседника", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                }
+                catch (NumberFormatException ex){
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось добавить собеседника: неверный формат порта", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        messenger.addUserListener(new UserListener() {
+            public void addedNewUser(User newUser) {
+                System.out.println("Create Butt");
+                JButton button = new JButton(newUser.getName());
+                userListPanel.add(button);
+                MainFrame.this.revalidate();
+            }
+        });
+
 
         JButton sendButton = new JButton("Отправить");
         sendButton.addActionListener(new ActionListener() {
@@ -136,7 +170,7 @@ public class MainFrame extends JFrame {
                                         .addGap(SMALL_GAP)
                                         .addComponent(textFieldTo))
                                 .addComponent(scrollPaneOutgoing)
-                                .addComponent(sendButton))
+                                .addComponent(addFriendButton))
                         .addContainerGap());
         messageLayout.setVerticalGroup(
                 messageLayout.createSequentialGroup()
@@ -149,7 +183,7 @@ public class MainFrame extends JFrame {
                         .addGap(MEDIUM_GAP)
                         .addComponent(scrollPaneOutgoing)
                         .addGap(MEDIUM_GAP)
-                        .addComponent(sendButton)
+                        .addComponent(addFriendButton)
                         .addContainerGap());
 
         GroupLayout layout = new GroupLayout(getContentPane());
