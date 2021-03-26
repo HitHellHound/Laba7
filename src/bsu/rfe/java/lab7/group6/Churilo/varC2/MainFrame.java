@@ -21,12 +21,6 @@ public class MainFrame extends JFrame {
     private static final int FRAME_MINIMUM_WIDTH = 500;
     private static final int FRAME_MINIMUM_HEIGHT = 500;
 
-    private static final int FROM_FIELD_DEFAULT_COLUMNS = 10;
-    private static final int TO_FIELD_DEFAULT_COLUMNS = 20;
-
-    private static final int INCOMING_AREA_DEFAULT_ROWS = 10;
-    private static final int OUTGOING_AREA_DEFAULT_ROWS = 5;
-
     private static final int SMALL_GAP = 5;
     private static final int MEDIUM_GAP = 10;
     private static final int LARGE_GAP = 15;
@@ -35,13 +29,7 @@ public class MainFrame extends JFrame {
 
     private InstantMessenger messenger;
 
-    private JTextField textFieldFrom;
-    private JTextField textFieldTo;
-
     private JPanel userListPanel;
-
-    private JTextArea textAreaIncoming;
-    private JTextArea textAreaOutgoing;
 
     public MainFrame(){
         super(FRAME_TITLE);
@@ -59,31 +47,8 @@ public class MainFrame extends JFrame {
         User me = new User(name, myAddress);
         messenger = new InstantMessenger(me);
 
-        textAreaIncoming = new JTextArea(INCOMING_AREA_DEFAULT_ROWS,0);
-        textAreaIncoming.setEditable(false);
-
-        messenger.addMessageListener(new MessageListener() {
-            public void messageReceived(User sender, String message) {
-                textAreaIncoming.append(sender.getName() + ": " + message + "\n");
-            }
-        });
-
         userListPanel = new JPanel();
-        //JScrollPane scrollPaneIncoming = new JScrollPane(textAreaIncoming);
-        JScrollPane scrollPaneIncoming = new JScrollPane(userListPanel);
-
-        final JLabel labelFrom = new JLabel("Подпись");
-        final JLabel labelTo = new JLabel("Получатель");
-
-        textFieldFrom = new JTextField(FROM_FIELD_DEFAULT_COLUMNS);
-        textFieldTo = new JTextField(TO_FIELD_DEFAULT_COLUMNS);
-
-        textAreaOutgoing = new JTextArea(OUTGOING_AREA_DEFAULT_ROWS, 0);
-
-        JScrollPane scrollPaneOutgoing = new JScrollPane(textAreaOutgoing);
-
-        JPanel messagePanel = new JPanel();
-        messagePanel.setBorder(BorderFactory.createTitledBorder("Сообщение пользователя" + SERVER_PORT));
+        JScrollPane scrollPaneUsers = new JScrollPane(userListPanel);
 
         JButton addFriendButton = new JButton("Добавить собеседника");
         addFriendButton.addActionListener(new ActionListener() {
@@ -114,96 +79,23 @@ public class MainFrame extends JFrame {
             }
         });
 
+        GroupLayout mainLayout = new GroupLayout(getContentPane());
+        setLayout(mainLayout);
 
-        JButton sendButton = new JButton("Отправить");
-        sendButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-//                try {
-//                    String senderName = textFieldFrom.getText();
-//                    String destinationAddress = textFieldTo.getText();
-//                    String message = textAreaOutgoing.getText();
-//
-//                    if (senderName.isEmpty()){
-//                        JOptionPane.showMessageDialog(MainFrame.this, "Введите имя отправителя", "Ошибка", JOptionPane.ERROR_MESSAGE);
-//                        return;
-//                    }
-//
-//                    if (destinationAddress.isEmpty()) {
-//                        JOptionPane.showMessageDialog(MainFrame.this, "Введите адрес узла-получателя", "Ошибка", JOptionPane.ERROR_MESSAGE);
-//                        return;
-//                    }
-//
-//                    if (message.isEmpty()) {
-//                        JOptionPane.showMessageDialog(MainFrame.this, "Введите текст сообщения", "Ошибка", JOptionPane.ERROR_MESSAGE);
-//                        return;
-//                    }
-//
-//                    //messenger.sendMessage(senderName, destinationAddress, message);
-//
-//                    textAreaIncoming.append("Me -> " + destinationAddress + ": " + message + "\n");
-//
-//                    textAreaOutgoing.setText("");
-//                }
-//                catch (UnknownHostException ex){
-//                    ex.printStackTrace();
-//                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение: узел-адресат не найден", "Ошибка", JOptionPane.ERROR_MESSAGE);
-//                }
-//                catch (IOException ex){
-//                    ex.printStackTrace();
-//                    JOptionPane.showMessageDialog(MainFrame.this,"Не удалось отправить сообщение", "Ошибка", JOptionPane.ERROR_MESSAGE);
-//                }
-            }
-        });
-
-        GroupLayout messageLayout = new GroupLayout(messagePanel);
-        messagePanel.setLayout(messageLayout);
-
-        messageLayout.setHorizontalGroup(
-                messageLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(messageLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                                .addGroup(messageLayout.createSequentialGroup()
-                                        .addComponent(labelFrom)
-                                        .addGap(SMALL_GAP)
-                                        .addComponent(textFieldFrom)
-                                        .addGap(LARGE_GAP)
-                                        .addComponent(labelTo)
-                                        .addGap(SMALL_GAP)
-                                        .addComponent(textFieldTo))
-                                .addComponent(scrollPaneOutgoing)
-                                .addComponent(addFriendButton))
-                        .addContainerGap());
-        messageLayout.setVerticalGroup(
-                messageLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(messageLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                .addComponent(labelFrom)
-                                .addComponent(textFieldFrom)
-                                .addComponent(labelTo)
-                                .addComponent(textFieldTo))
-                        .addGap(MEDIUM_GAP)
-                        .addComponent(scrollPaneOutgoing)
-                        .addGap(MEDIUM_GAP)
-                        .addComponent(addFriendButton)
-                        .addContainerGap());
-
-        GroupLayout layout = new GroupLayout(getContentPane());
-        setLayout(layout);
-
-        layout.setHorizontalGroup(
-                layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(layout.createParallelGroup()
-                                .addComponent(scrollPaneIncoming)
-                                .addComponent(messagePanel))
-                        .addContainerGap());
-        layout.setVerticalGroup(
-                layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(scrollPaneIncoming)
-                        .addGap(MEDIUM_GAP)
-                        .addComponent(messagePanel)
-                        .addContainerGap());
+        mainLayout.setHorizontalGroup(mainLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(mainLayout.createParallelGroup(GroupLayout.Alignment.CENTER)
+                        .addComponent(scrollPaneUsers)
+                        .addComponent(addFriendButton))
+                .addContainerGap()
+        );
+        mainLayout.setVerticalGroup(mainLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(scrollPaneUsers)
+                .addGap(MEDIUM_GAP)
+                .addComponent(addFriendButton)
+                .addContainerGap()
+        );
     }
 
     private JButton createUserButton(User user){

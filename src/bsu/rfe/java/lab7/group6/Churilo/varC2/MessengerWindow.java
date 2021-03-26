@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.UnknownHostException;
 
@@ -41,10 +43,19 @@ public class MessengerWindow extends JFrame {
 
         JScrollPane scrollPaneIncoming = new JScrollPane(textAreaIncoming);
 
-        messenger.addMessageListener(new MessageListener() {
+        MessageListener messageListener = new MessageListener() {
             public void messageReceived(User sender, String message) {
                 if (sender.equals(recipient))
                     textAreaIncoming.append(message);
+            }
+        };
+
+        messenger.addMessageListener(messageListener);
+
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                messenger.removeMessageListener(messageListener);
             }
         });
         //

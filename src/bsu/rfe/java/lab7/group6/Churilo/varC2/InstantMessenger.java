@@ -44,20 +44,32 @@ public class InstantMessenger {
 
                             User newUser = new User(name, new InetSocketAddress(IP, Integer.parseInt(port)));
                             synchronized (users) {
-                                if(!isUserInList(newUser)) {
+                                if(findUser(newUser) == null) {
                                     users.add(newUser);
                                     notifyAddUserListeners(newUser);
                                 }
                             }
                         }
-                        /*String senderName = in.readUTF();
-                        String senderPort = in.readUTF();
-                        String message = in.readUTF();
+                        else if(messageCode.equals("0042")){
+                            String IP = in.readUTF();
+                            String port = in.readUTF();
+                            String name = in.readUTF();
+                            String message = in.readUTF();
 
+                            User sender;
+                            synchronized (users) {
+                                sender = findUser(new User(name, new InetSocketAddress(IP, Integer.parseInt(port))));
+                                if (sender == null) {
+                                    sender = new User(name, new InetSocketAddress(IP, Integer.parseInt(port)));
+                                    users.add(sender);
+                                    notifyAddUserListeners(sender);
+                                }
+                            }
 
-                        String address = ((InetSocketAddress)socket.getRemoteSocketAddress()).getAddress().getHostAddress();
-                        notifyMessageListeners(senderName + " (" + address + ":" + senderPort + ")", message);
-                        */
+                            message = name + ": " + message + "\n";
+                            sender.addMessageToHistory(message);
+                            notifyMessageListeners(sender, message);
+                        }
                         socket.close();
                     }
                 }
@@ -71,7 +83,7 @@ public class InstantMessenger {
 
     public void sendFriendRequest(String port) throws UnknownHostException, IOException, NumberFormatException{
         int portInt = Integer.parseInt(port);
-        //if(portInt == serverPort) return;
+        if(portInt == serverPort) return;
 
         Socket socket = new Socket("127.0.0.1", portInt);
 
@@ -102,7 +114,7 @@ public class InstantMessenger {
             socket.close();
 
             synchronized (users) {
-                if(!isUserInList(newUser)) {
+                if(findUser(newUser) == null) {
                     users.add(newUser);
                     notifyAddUserListeners(newUser);
                 }
@@ -119,24 +131,25 @@ public class InstantMessenger {
     public synchronized void sendMessage(User recipient, String message) throws UnknownHostException, IOException {
         Socket socket = new Socket(recipient.getAddress().getAddress().getHostAddress(),recipient.getAddress().getPort());
 
-        recipient.addMessageToHistory("Me -> " + recipient.getName() + ": " + message + "\n");
-        notifyMessageListeners(recipient, "Me -> " + recipient.getName() + ": " + message + "\n");
+        recipient.addMessageToHistory("Я: " + message + "\n");
+        notifyMessageListeners(recipient, "Я: " + message + "\n");
 
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         out.writeUTF("0042");
         out.writeUTF(owner.getAddress().getAddress().getHostAddress());
         out.writeUTF(String.valueOf(serverPort));
+        out.writeUTF(owner.getName());
         out.writeUTF(message);
 
         socket.close();
     }
 
-    private boolean isUserInList(User userC) {
+    private synchronized User findUser(User userC) {
         for (User user : users) {
             if (userC.equals(user))
-                return true;
+                return user;
         }
-        return false;
+        return null;
     }
 
 
