@@ -22,12 +22,13 @@ public class MessengerWindow extends JFrame {
 
     private InstantMessenger messenger;
     private User recipient;
+    private boolean currentRecipientStatus;
 
     private JTextArea textAreaIncoming;
     private JTextArea textAreaOutgoing;
 
     MessengerWindow(InstantMessenger messenger, User recipient){
-        super("Чат с пользователем " + recipient.getName());
+        super("Чат с пользователем " + recipient.getName() + "(offline)");
         setMinimumSize(new Dimension(FRAME_MINIMUM_WIDTH, FRAME_MINIMUM_HEIGHT));
 
         Toolkit kit = Toolkit.getDefaultToolkit();
@@ -35,6 +36,7 @@ public class MessengerWindow extends JFrame {
 
         this.messenger = messenger;
         this.recipient = recipient;
+        currentRecipientStatus = false;
 
         //Messages Panel
         textAreaIncoming = new JTextArea(INCOMING_AREA_DEFAULT_ROWS, 0);
@@ -52,12 +54,6 @@ public class MessengerWindow extends JFrame {
 
         messenger.addMessageListener(messageListener);
 
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                super.windowClosing(e);
-                messenger.removeMessageListener(messageListener);
-            }
-        });
         //
 
         //Your message Panel
@@ -90,6 +86,39 @@ public class MessengerWindow extends JFrame {
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(MessengerWindow.this,"Не удалось отправить сообщение", "Ошибка", JOptionPane.ERROR_MESSAGE);
                 }
+            }
+        });
+        sendButton.setEnabled(false);
+
+        UserListener userListener = new UserListener() {
+            public void addedNewUser(User newUser) {
+                textAreaIncoming.append("Пользователь " + newUser.getName() + " присоединисля к вашей трапезе");
+            }
+
+            public void statusChanged() {
+                if(recipient.isOnline()){
+                    if(!currentRecipientStatus){
+                        sendButton.setEnabled(true);
+                        MessengerWindow.this.setTitle("Чат с пользователем " + recipient.getName() + "(online)");
+                        currentRecipientStatus = true;
+                    }
+                }
+                else {
+                    if(currentRecipientStatus){
+                        sendButton.setEnabled(false);
+                        MessengerWindow.this.setTitle("Чат с пользователем " + recipient.getName() + "(offline)");
+                        currentRecipientStatus = false;
+                    }
+                }
+            }
+        };
+        messenger.addUserListener(userListener);
+
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                messenger.removeMessageListener(messageListener);
+                messenger.removeUserListener(userListener);
             }
         });
 

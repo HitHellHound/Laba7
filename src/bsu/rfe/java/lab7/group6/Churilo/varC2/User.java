@@ -4,12 +4,14 @@ import java.net.InetSocketAddress;
 
 public class User {
     private String name;
+    private boolean onlineStatus;
     private InetSocketAddress address;
     private StringBuffer messageHistory = new StringBuffer();
 
     public User(String name, InetSocketAddress address){
         this.name = name;
         this.address = address;
+        onlineStatus = true;
     }
 
     public String getName(){
@@ -22,6 +24,14 @@ public class User {
 
     private void setNewName(String name){
         this.name = name;
+    }
+
+    public boolean isOnline(){
+        return onlineStatus;
+    }
+
+    public synchronized void setOnlineStatus(boolean status){
+        this.onlineStatus = status;
     }
 
     public StringBuffer getMessageHistory(){

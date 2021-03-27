@@ -77,6 +77,8 @@ public class MainFrame extends JFrame {
                 userListPanel.add(button);
                 MainFrame.this.revalidate();
             }
+
+            public void statusChanged(){}
         });
 
         GroupLayout mainLayout = new GroupLayout(getContentPane());

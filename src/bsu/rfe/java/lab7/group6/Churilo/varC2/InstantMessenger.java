@@ -1,17 +1,22 @@
 package bsu.rfe.java.lab7.group6.Churilo.varC2;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.rmi.UnknownHostException;
 import java.util.LinkedList;
 
 public class InstantMessenger {
     private User owner;
     private int serverPort;
+
+    final static String MULTICAST_IP = "224.0.0.3";
+    final static int MULTICAST_PORT = 8888;
+    private MulticastSocket multicastSocket;
+
     private LinkedList<MessageListener> listeners = new LinkedList<MessageListener>();
     private LinkedList<User> users = new LinkedList<User>();
     private LinkedList<UserListener> userListeners = new LinkedList<UserListener>();
@@ -79,6 +84,68 @@ public class InstantMessenger {
                 }
             }
         }).start();
+
+        try{
+            multicastSocket = new MulticastSocket(MULTICAST_PORT);
+            InetAddress multicastGroup = InetAddress.getByName(MULTICAST_IP);
+            multicastSocket.joinGroup(multicastGroup);
+
+            new Thread(new Runnable() {
+                public void run() {
+                    String msg = "8888<>" + owner.getAddress().getAddress().getHostAddress() + "<>" + serverPort + "<>8888";
+                    DatagramPacket msgPacket = new DatagramPacket(msg.getBytes(), msg.getBytes().length, multicastGroup, MULTICAST_PORT);
+                    try {
+                        while (true) {
+                            try {
+                                multicastSocket.send(msgPacket);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            Thread.sleep(1000);
+                        }
+                    }
+                    catch (InterruptedException e){}
+                }
+            }).start();
+
+            new Thread(new Runnable() {
+                public void run() {
+                    byte[] buffer = new byte[512];
+                    while (true){
+                        DatagramPacket msgPacket = new DatagramPacket(buffer, buffer.length);
+                        try {
+                            multicastSocket.receive(msgPacket);
+
+                            String msg = new String(buffer, 0, buffer.length);
+                            analyzeMulticastMessage(msg);
+                        }
+                        catch (IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }).start();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    while (true) {
+                        synchronized (users){
+                            notifyStatusUserListeners();
+                            for (User user : users){
+                                user.setOnlineStatus(false);
+                            }
+                        }
+                        Thread.sleep(3000);
+                    }
+                }
+                catch (InterruptedException e){}
+            }
+        }).start();
     }
 
     public void sendFriendRequest(String port) throws UnknownHostException, IOException, NumberFormatException{
@@ -144,6 +211,16 @@ public class InstantMessenger {
         socket.close();
     }
 
+    private synchronized void analyzeMulticastMessage(String msg){
+        String[] fragments = msg.split("<>");
+        if(fragments[0].equals("8888")){
+            User userStat = findUser(new User("anon", new InetSocketAddress(fragments[1], Integer.parseInt(fragments[2]))));
+            if(userStat != null){
+                userStat.setOnlineStatus(true);
+            }
+        }
+    }
+
     private synchronized User findUser(User userC) {
         for (User user : users) {
             if (userC.equals(user))
@@ -188,6 +265,13 @@ public class InstantMessenger {
         synchronized (userListeners){
             for (UserListener listener : userListeners)
                 listener.addedNewUser(newUser);
+        }
+    }
+
+    private void notifyStatusUserListeners(){
+        synchronized (userListeners){
+            for (UserListener listener : userListeners)
+                listener.statusChanged();
         }
     }
 }
